@@ -162,7 +162,6 @@ namespace kfusion
         void renderImage(const Points& points, const Normals& normals, const Reprojector& reproj, const Vec3f& light_pose, Image& image);
         void renderTangentColors(const Normals& normals, Image& image);
 
-
         //exctraction functionality
         size_t extractCloud(const TsdfVolume& volume, const Aff3f& aff, PtrSz<Point> output);
         void extractNormals(const TsdfVolume& volume, const PtrSz<Point>& points, const Aff3f& aff, const Mat3f& Rinv, float gradient_delta_factor, float4* output);
@@ -170,5 +169,12 @@ namespace kfusion
         struct float8  { float x, y, z, w, c1, c2, c3, c4; };
         struct float12 { float x, y, z, w, normal_x, normal_y, normal_z, n4, c1, c2, c3, c4; };
         void mergePointNormal(const DeviceArray<Point>& cloud, const DeviceArray<float8>& normals, const DeviceArray<float12>& output);
+
+        //marching cubes functions
+        void bindTextures(const int *edgeBuf, const int *triBuf, const int *numVertsBuf);
+        void unbindTextures();
+        int getOccupiedVoxels(const TsdfVolume& volume, DeviceArray2D<int>& occupied_voxels);
+        int computeOffsetsAndTotalVertexes(DeviceArray2D<int>& occupied_voxels);
+        void generateTriangles(const TsdfVolume& volume, const DeviceArray2D<int>& occupied_voxels, const float3& volume_size, DeviceArray<Point>& output);
     }
 }

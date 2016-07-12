@@ -13,6 +13,7 @@ set(Includes_cuda_srcs
     include/${module_name}/cuda/device_array.hpp
     include/${module_name}/cuda/device_memory.hpp
     include/${module_name}/cuda/imgproc.hpp
+    include/${module_name}/cuda/marching_cubes.hpp
     include/${module_name}/cuda/kernel_containers.hpp
     include/${module_name}/cuda/projective_icp.hpp
     include/${module_name}/cuda/tsdf_volume.hpp)
@@ -25,6 +26,7 @@ set(Source_srcs
     src/imgproc.cpp
     src/internal.hpp
     src/kinfu.cpp
+    src/marching_cubes.cpp
     src/precomp.cpp
     src/precomp.hpp
     src/projective_icp.cpp
@@ -35,6 +37,7 @@ set(Source_cuda_srcs
     src/cuda/color_volume.cu
     src/cuda/device.hpp
     src/cuda/imgproc.cu
+    src/cuda/marching_cubes.cu
     src/cuda/proj_icp.cu
     src/cuda/temp_utils.hpp
     src/cuda/texture_binder.hpp
