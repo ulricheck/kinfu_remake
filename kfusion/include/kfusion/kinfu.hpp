@@ -29,7 +29,8 @@ namespace kfusion
         bool integrate_color;  //Color integration
         Intr intr;  //Camera parameters
 
-        Vec3i volume_dims; //number of voxels
+        Vec3i tsdf_volume_dims; //number of voxels for the TSDF volume
+        Vec3i color_volume_dims; //number of voxels for the color volume (typically <= TSDF volume)
         Vec3f volume_size; //meters
         Affine3f volume_pose; //meters, inital pose
 

@@ -19,7 +19,8 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     p.integrate_color = false;
     p.intr = Intr(525.f, 525.f, p.cols/2 - 0.5f, p.rows/2 - 0.5f);
 
-    p.volume_dims = Vec3i::all(512);  //number of voxels
+    p.tsdf_volume_dims = Vec3i::all(512);  //number of voxels
+    p.color_volume_dims = Vec3i::all(256);  //number of voxels
     p.volume_size = Vec3f::all(3.f);  //meters
     p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
 
@@ -49,9 +50,10 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
 
 kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
-    CV_Assert(params.volume_dims[0] % 32 == 0);
+    CV_Assert(params.tsdf_volume_dims[0] % 32 == 0);
+    CV_Assert(params.color_volume_dims[0] % 32 == 0);
 
-    tsdf_volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
+    tsdf_volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.tsdf_volume_dims));
 
     tsdf_volume_->setTruncDist(params_.tsdf_trunc_dist);
     tsdf_volume_->setMaxWeight(params_.tsdf_max_weight);
@@ -61,7 +63,7 @@ kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(pa
     tsdf_volume_->setGradientDeltaFactor(params_.gradient_delta_factor);
 
     if (params.integrate_color) {
-        color_volume_ = cv::Ptr<cuda::ColorVolume>(new cuda::ColorVolume(params_.volume_dims));
+        color_volume_ = cv::Ptr<cuda::ColorVolume>(new cuda::ColorVolume(params_.color_volume_dims));
 
         color_volume_->setTruncDist(params_.tsdf_trunc_dist);
         color_volume_->setMaxWeight(params_.color_max_weight);
