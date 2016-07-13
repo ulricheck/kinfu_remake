@@ -71,9 +71,9 @@ DeviceArray<Point> kfusion::cuda::MarchingCubes::run (const TsdfVolume& volume,
 
     DeviceArray2D<int> occupied_voxels(3, active_voxels, occupied_voxels_buffer_.ptr(), occupied_voxels_buffer_.step());
 
-    int total_vertexes = device::computeOffsetsAndTotalVertexes(occupied_voxels);
+    int total_vertexes = device::computeOffsetsAndTotalVertices(occupied_voxels);
 
-    device::generateTriangles(device_volume, occupied_voxels, volume_size, (DeviceArray<device::Point>&)triangles_buffer);
+    device::generateTriangles(device_volume, occupied_voxels, (DeviceArray<device::Point>&)triangles_buffer);
 
     device::unbindTextures();
     return DeviceArray<Point>(triangles_buffer.ptr(), total_vertexes);
