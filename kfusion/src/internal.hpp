@@ -175,6 +175,6 @@ namespace kfusion
         void unbindTextures();
         int getOccupiedVoxels(const TsdfVolume& volume, DeviceArray2D<int>& occupied_voxels);
         int computeOffsetsAndTotalVertices(DeviceArray2D<int>& occupied_voxels);
-        void generateTriangles(const TsdfVolume& volume, const DeviceArray2D<int>& occupied_voxels, DeviceArray<Point>& output);
+        void generateTriangles(const TsdfVolume& volume, const Aff3f& aff, const DeviceArray2D<int>& occupied_voxels, DeviceArray<Point>& output);
     }
 }

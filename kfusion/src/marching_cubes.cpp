@@ -54,11 +54,14 @@ DeviceArray<Point> kfusion::cuda::MarchingCubes::run (const TsdfVolume& volume,
         triangles_buffer.create(DEFAULT_TRIANGLES_BUFFER_SIZE);
     occupied_voxels_buffer_.create(3, static_cast<int> (triangles_buffer.size () / 3));
 
+    Affine3f pose = volume.getPose();
+    device::Aff3f aff  = device_cast<device::Aff3f>(pose);
+
     device::bindTextures(edgeTable_, triTable_, numVertsTable_);
 
     // "Cast" cuda::TsdfVolume into device::TsdfVolume
     int3 volume_dims = device_cast<const int3>(volume.getDims());
-    float3 volume_size = device_cast<const float3>(volume.getSize());
+    float3 volume_size = device_cast<const float3>(volume.getVoxelSize());
     ushort2* data_ptr = const_cast<ushort2*>(volume.data().ptr<ushort2>());
     device::TsdfVolume device_volume(data_ptr, volume_dims, volume_size, volume.getTruncDist(), volume.getMaxWeight());
 
@@ -71,12 +74,12 @@ DeviceArray<Point> kfusion::cuda::MarchingCubes::run (const TsdfVolume& volume,
 
     DeviceArray2D<int> occupied_voxels(3, active_voxels, occupied_voxels_buffer_.ptr(), occupied_voxels_buffer_.step());
 
-    int total_vertexes = device::computeOffsetsAndTotalVertices(occupied_voxels);
+    int total_vertices = device::computeOffsetsAndTotalVertices(occupied_voxels);
 
-    device::generateTriangles(device_volume, occupied_voxels, (DeviceArray<device::Point>&)triangles_buffer);
+    device::generateTriangles(device_volume, aff, occupied_voxels, (DeviceArray<device::Point>&)triangles_buffer);
 
     device::unbindTextures();
-    return DeviceArray<Point>(triangles_buffer.ptr(), total_vertexes);
+    return DeviceArray<Point>(triangles_buffer.ptr(), total_vertices);
 }
 
 // edge table maps 8-bit flag representing which cube vertices are inside

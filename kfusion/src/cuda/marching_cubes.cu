@@ -237,6 +237,7 @@ namespace kfusion
             const int* vertex_offsets;
             int voxels_count;
             float3 cell_size;
+            Aff3f aff;
 
             mutable Point *output;
 
@@ -252,7 +253,10 @@ namespace kfusion
                 coo.y *= cell_size.y;
                 coo.z *= cell_size.z;
 
-                return coo;
+                float3 worldp;
+                worldp = aff * coo;
+
+                return worldp;
             }
 
             __kf_device__
@@ -339,7 +343,7 @@ namespace kfusion
     }
 }
 
-void kfusion::device::generateTriangles (const TsdfVolume& volume, const DeviceArray2D<int>& occupied_voxels, DeviceArray<Point>& output)
+void kfusion::device::generateTriangles (const TsdfVolume& volume, const Aff3f& aff, const DeviceArray2D<int>& occupied_voxels, DeviceArray<Point>& output)
 {
     const int block = 256;
 
@@ -350,6 +354,7 @@ void kfusion::device::generateTriangles (const TsdfVolume& volume, const DeviceA
     tg.vertex_offsets = occupied_voxels.ptr (2);
     tg.voxels_count = occupied_voxels.cols ();
     tg.cell_size = volume.voxel_size;
+    tg.aff = aff;
     tg.output = output;
 
     trianglesGeneratorKernel<<<divUp (tg.voxels_count, block), block>>>(tg);
