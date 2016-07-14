@@ -3,6 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
+#include <kfusion/cuda/marching_cubes.hpp>
 #include <io/capture.hpp>
 
 using namespace kfusion;
@@ -21,6 +22,9 @@ struct KinFuApp
 
         if(event.code == 'i' || event.code == 'I')
             kinfu.iteractive_mode_ = !kinfu.iteractive_mode_;
+
+        if(event.code == 'm' || event.code == 'M')
+            kinfu.take_mesh(*kinfu.kinfu_);
     }
 
     KinFuApp(OpenNISource& source) : exit_ (false),  iteractive_mode_(false), capture_ (source), pause_(false)
@@ -71,19 +75,52 @@ struct KinFuApp
 
     void take_cloud(KinFu& kinfu)
     {
-        cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer);
+        cuda::DeviceArray<Point> cloud = kinfu.tsdf().fetchCloud(cloud_buffer_);
         cv::Mat cloud_host(1, (int)cloud.size(), CV_32FC4);
         if (kinfu.params().integrate_color) {
-            kinfu.color_volume()->fetchColors(cloud, color_buffer);
+            kinfu.color_volume()->fetchColors(cloud, color_buffer_);
             cv::Mat color_host(1, (int)cloud.size(), CV_8UC4);
             cloud.download(cloud_host.ptr<Point>());
-            color_buffer.download(color_host.ptr<RGB>());
+            color_buffer_.download(color_host.ptr<RGB>());
             viz.showWidget("cloud", cv::viz::WCloud(cloud_host, color_host));
         } else
         {
             cloud.download(cloud_host.ptr<Point>());
             viz.showWidget("cloud", cv::viz::WCloud(cloud_host));
         }
+    }
+
+    void take_mesh(KinFu& kinfu)
+    {
+        if (!marching_cubes_)
+            marching_cubes_ = cv::Ptr<cuda::MarchingCubes>(new cuda::MarchingCubes());
+
+        cuda::DeviceArray<Point> triangles = marching_cubes_->run(kinfu.tsdf(), triangles_buffer_);
+        int n_vert = triangles.size();
+
+        cv::viz::Mesh mesh;
+        mesh.cloud.create(1, n_vert, CV_32FC4);
+        mesh.polygons.create(1, 4*n_vert/3, CV_32SC1);
+
+        for (int i = 0; i < n_vert/3; ++i) {
+            mesh.polygons.at<int>(4*i) = 3;
+            mesh.polygons.at<int>(4*i+1) = 3*i;
+            mesh.polygons.at<int>(4*i+2) = 3*i+1;
+            mesh.polygons.at<int>(4*i+3) = 3*i+2;
+        }
+
+        cv::Mat mesh_colors(1, n_vert, CV_8UC4);
+
+        if (kinfu.params().integrate_color)
+        {
+            kinfu.color_volume()->fetchColors(triangles, color_buffer_);
+            color_buffer_.download(mesh_colors.ptr<RGB>());
+            mesh.colors = mesh_colors;
+        }
+
+        triangles.download(mesh.cloud.ptr<Point>());
+
+        viz.showWidget("cloud", cv::viz::WMesh(mesh));
     }
 
     bool execute()
@@ -126,6 +163,7 @@ struct KinFuApp
             {
             case 't': case 'T' : take_cloud(kinfu); break;
             case 'i': case 'I' : iteractive_mode_ = !iteractive_mode_; break;
+            case 'm': case 'M' : take_mesh(kinfu); break;
             case 27: exit_ = true; break;
             case 32: pause_ = !pause_; break;
             }
@@ -146,8 +184,10 @@ struct KinFuApp
     cuda::Image view_device_;
     cuda::Depth depth_device_;
     cuda::Image color_device_;
-    cuda::DeviceArray<Point> cloud_buffer;
-    cuda::DeviceArray<RGB> color_buffer;
+    cuda::DeviceArray<Point> cloud_buffer_;
+    cuda::DeviceArray<RGB> color_buffer_;
+    cv::Ptr<cuda::MarchingCubes> marching_cubes_;
+    cuda::DeviceArray<Point> triangles_buffer_;
 };
 
 
