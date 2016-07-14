@@ -161,9 +161,8 @@ struct KinFuApp
       {
           kinfu.color_volume()->fetchColors(triangles, color_buffer_);
           color_buffer_.download(mesh_colors.ptr<RGB>());
+          mesh.colors = mesh_colors;
       }
-
-      mesh.colors = mesh_colors;
 
       triangles.download(mesh.cloud.ptr<Point>());
 
@@ -275,11 +274,13 @@ int main (int argc, char* argv[])
 
   KinFuParams custom_params = KinFuParams::default_params();
   custom_params.integrate_color = true;
-  custom_params.volume_dims = Vec3i::all(256);
-  custom_params.volume_size = Vec3f::all(0.7f);
+  custom_params.tsdf_volume_dims = Vec3i::all(512);
+  custom_params.color_volume_dims = Vec3i::all(256);
+  custom_params.volume_size = Vec3f::all(0.4f);
   custom_params.volume_pose = Affine3f().translate(Vec3f(-custom_params.volume_size[0]/2, -custom_params.volume_size[1]/2, 0.5f));
   custom_params.intr = Intr(520.89, 520.23, 324.54, 237.553);
-  custom_params.tsdf_trunc_dist = 0.05;
+  custom_params.tsdf_trunc_dist = 0.002;
+  custom_params.bilateral_kernel_size = 3;     //pixels
 
   KinFuApp app (capture, custom_params);
 
