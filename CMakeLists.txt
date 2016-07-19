@@ -60,4 +60,8 @@ endif()
 warnings_disable(CMAKE_CXX_FLAGS /wd4985)
 
 add_subdirectory(kfusion)
-add_subdirectory(apps)
+
+option(BUILD_APPS "Build kfusion example apps." OFF)
+if(BUILD_APPS)
+  add_subdirectory(apps)
+endif(BUILD_APPS)

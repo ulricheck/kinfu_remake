@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR}/kfusion/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../kfusion/include/)
 
 # Not recommended by CMake to use GLOB
 # file(GLOB srcs *.cpp *.hpp)
