@@ -32,7 +32,17 @@ namespace kfusion {
     this->open(depth_filename, rgb_filename, repeat);
   }
 
-  void BinSource::open(const std::string& depth_filename, const std::string& rgb_filename,
+  /*
+   * @name open
+   * @fn int open(const std::string& depth_filename, const std::string& rgb_filename,
+                  bool repeat = false)
+   * @brief Open the bin stream
+   * @param[in] depth filename
+   * @param[in] color filename
+   * @param[in] wether to repeat or not
+   * @return total number of frames to grab
+   */
+  int BinSource::open(const std::string& depth_filename, const std::string& rgb_filename,
                        bool repeat) {
 
     depth_image_stream_.open(depth_filename.c_str(), std::ios::in | std::ios::binary);
@@ -83,6 +93,8 @@ namespace kfusion {
     } else {
       std::cerr << "[kfusion::BinSource::open] : no rgb frames in the binary file" << std::endl;
     }
+
+    return total_frames_;
   }
 
   void BinSource::release() {

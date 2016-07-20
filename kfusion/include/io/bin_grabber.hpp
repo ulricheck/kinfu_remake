@@ -82,7 +82,17 @@ class KF_EXPORTS BinSource {
   BinSource(const std::string& depth_filename, const std::string& rgb_filename,
             bool repeat = false);
 
-  void open(const std::string& depth_filename, const std::string& rgb_filename,
+  /**
+   * @name open
+   * @fn int open(const std::string& depth_filename, const std::string& rgb_filename,
+                  bool repeat = false)
+   * @brief Open the bin stream
+   * @param[in] depth filename
+   * @param[in] color filename
+   * @param[in] wether to repeat or not
+   * @return total number of frames to grab
+   */
+  int open(const std::string& depth_filename, const std::string& rgb_filename,
             bool repeat = false);
 
   void release();
@@ -93,12 +103,14 @@ class KF_EXPORTS BinSource {
 
   //parameters taken from camera/oni
 
-  float depth_focal_length_VGA;
-  float baseline;               // mm
-  double pixelSize;             // mm
-  unsigned short max_depth;     // mm
+  //float depth_focal_length_VGA;
+  //float baseline;               // mm
+  //double pixelSize;             // mm
+  //unsigned short max_depth;     // mm
 
   bool setRegistration (bool value = false);
+
+  int getTotalFrames(void) const {return total_frames_;}
 
  private:
 
