@@ -143,7 +143,7 @@ namespace kfusion {
         std::vector<unsigned short> aligned_depth_frame(depth_size, 0);
 
         int d_i;
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (d_i = 0; d_i < depth_size; ++d_i) {
           float u_ir = d_i % depth_width;
           float v_ir = d_i / depth_width;
@@ -169,7 +169,7 @@ namespace kfusion {
 
 
           if (new_depth_val > 0) {
-            #pragma omp critical
+            //#pragma omp critical
             {
               // Check that new depth is smaller than current depth (not masked)
               if (aligned_depth_frame[j] > 0) {
