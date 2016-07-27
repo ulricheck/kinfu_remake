@@ -10,7 +10,7 @@ endif()
 project(kfusion C CXX)
 
 # ---[ utility
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 include(cmake/Utils.cmake)
 include(cmake/Targets.cmake)
 
