@@ -18,6 +18,7 @@ namespace kfusion {
   BinSource::BinSource(const std::string& depth_filename, const std::string& rgb_filename,
             bool repeat)
     : manual_align_(false)
+    , cur_frame_(0)
     , K_ir_((cv::Mat_<float>(3,3) << 589.9,   0.0, 328.4,
                                       0.0, 589.1, 236.89,
                                       0.0,   0.0,   1.0))
