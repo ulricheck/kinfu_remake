@@ -2,6 +2,7 @@
 #include "texture_binder.hpp"
 #include "../internal.hpp"
 #include <stdio.h>
+#include <cmath>
 
 using namespace kfusion::device;
 
@@ -86,28 +87,31 @@ namespace kfusion
 
                         bool update = false;
                         // Check the distance
-                        float sdf = Dp - __fsqrt_rn(dot(vc, vc)); //Dp - norm(v)
+                        float sdf = Dp - sqrt(dot(vc, vc)); //Dp - norm(v)
                         update = sdf > -volume.trunc_dist && sdf < volume.trunc_dist;
                         if (update)
                         {
                             // Read the existing value and weight
                             uchar4 volume_rgbw = *vptr;
-                            uchar weight_prev = volume_rgbw.w;
+                            int weight_prev = volume_rgbw.w;
 
                             // Average with new value and weight
                             uchar4 rgb = tex2D(image_tex, coo.x, coo.y);
 
-                            uchar Wrk = 1;
-                            uchar new_x = (volume_rgbw.x * weight_prev + Wrk * rgb.x) / (weight_prev + Wrk);
-                            uchar new_y = (volume_rgbw.y * weight_prev + Wrk * rgb.y) / (weight_prev + Wrk);
-                            uchar new_z = (volume_rgbw.z * weight_prev + Wrk * rgb.z) / (weight_prev + Wrk);
+                            const float Wrk = 1.f;
+                            float new_x =  __fdividef(__fmaf_rn(volume_rgbw.x, weight_prev, rgb.x), weight_prev + Wrk);
+                            //uchar new_x = (volume_rgbw.x * weight_prev + Wrk * rgb.x) / (weight_prev + Wrk);
+                            float new_y =  __fdividef(__fmaf_rn(volume_rgbw.y, weight_prev, rgb.y), weight_prev + Wrk);
+                            //uchar new_y = (volume_rgbw.y * weight_prev + Wrk * rgb.y) / (weight_prev + Wrk);
+                            float new_z =  __fdividef(__fmaf_rn(volume_rgbw.z, weight_prev, rgb.z), weight_prev + Wrk);
+                            //uchar new_z = (volume_rgbw.z * weight_prev + Wrk * rgb.z) / (weight_prev + Wrk);
 
-                            uchar weight_new = min(weight_prev + 1, 255);
+                            int weight_new = min(weight_prev + 1, 255);
 
                             uchar4 volume_rgbw_new;
-                            volume_rgbw_new.x = min(255, new_x);
-                            volume_rgbw_new.y = min(255, new_y);
-                            volume_rgbw_new.z = min(255, new_z);
+                            volume_rgbw_new.x = (uchar)__float2int_rn(new_x);
+                            volume_rgbw_new.y = (uchar)__float2int_rn(new_y);
+                            volume_rgbw_new.z = (uchar)__float2int_rn(new_z);
                             volume_rgbw_new.w = min(volume.max_weight, weight_new);
 
                             // Write back
