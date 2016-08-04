@@ -29,8 +29,8 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     p.bilateral_kernel_size = 7;     //pixels
 
     p.icp_truncate_depth_dist = 0.f;        //meters, disabled
-    p.icp_dist_thres = 0.1f;                //meters
-    p.icp_angle_thres = deg2rad(30.f); //radians
+    p.icp_dist_thres = 0.25f;                //meters
+    p.icp_angle_thres = deg2rad(20.f); //radians
     p.icp_iter_num.assign(iters, iters + levels);
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
