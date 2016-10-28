@@ -15,11 +15,14 @@ namespace kfusion
         typedef unsigned short ushort;
         typedef unsigned char uchar;
 
+        typedef uchar4 Color;
+
         typedef PtrStepSz<ushort> Dists;
         typedef DeviceArray2D<ushort> Depth;
         typedef DeviceArray2D<Normal> Normals;
         typedef DeviceArray2D<Point> Points;
-        typedef DeviceArray2D<uchar4> Image;
+        typedef PtrStepSz<Color> Colors;  // Not sure it's needed
+        typedef DeviceArray2D<Color> Image;
 
         typedef int3   Vec3i;
         typedef float3 Vec3f;
@@ -46,6 +49,28 @@ namespace kfusion
             __kf_device__ elem_type* zstep(elem_type *const ptr) const;
         private:
             TsdfVolume& operator=(const TsdfVolume&);
+        };
+
+        struct ColorVolume
+        {
+        public:
+            typedef uchar4 elem_type;
+
+            elem_type *const data;
+            const int3 dims;
+            const float3 voxel_size;
+            const float trunc_dist;
+            const int max_weight;
+
+            ColorVolume(elem_type* data, int3 dims, float3 voxel_size, float trunc_dist, int max_weight);
+            //TsdfVolume(const TsdfVolume&);
+
+            __kf_device__ elem_type* operator()(int x, int y, int z);
+            __kf_device__ const elem_type* operator() (int x, int y, int z) const ;
+            __kf_device__ elem_type* beg(int x, int y) const;
+            __kf_device__ elem_type* zstep(elem_type *const ptr) const;
+        private:
+            ColorVolume& operator=(const ColorVolume&);
         };
 
         struct Projector
@@ -115,6 +140,10 @@ namespace kfusion
         __kf_device__ float unpack_tsdf(ushort2 value, int& weight);
         __kf_device__ float unpack_tsdf(ushort2 value);
 
+        //color volume functions
+        void clear_volume(ColorVolume volume);
+        void integrate(const Colors& image, const Dists& depth_map, ColorVolume& volume, const Aff3f& aff, const Projector& proj);
+        void fetchColors(const ColorVolume& volume, const Aff3f& aff_inv, const PtrSz<Point>& points, PtrSz<Color>& colors);
 
         //image proc functions
         void compute_dists(const Depth& depth, Dists dists, float2 f, float2 c);
@@ -133,7 +162,6 @@ namespace kfusion
         void renderImage(const Points& points, const Normals& normals, const Reprojector& reproj, const Vec3f& light_pose, Image& image);
         void renderTangentColors(const Normals& normals, Image& image);
 
-
         //exctraction functionality
         size_t extractCloud(const TsdfVolume& volume, const Aff3f& aff, PtrSz<Point> output);
         void extractNormals(const TsdfVolume& volume, const PtrSz<Point>& points, const Aff3f& aff, const Mat3f& Rinv, float gradient_delta_factor, float4* output);
@@ -141,5 +169,12 @@ namespace kfusion
         struct float8  { float x, y, z, w, c1, c2, c3, c4; };
         struct float12 { float x, y, z, w, normal_x, normal_y, normal_z, n4, c1, c2, c3, c4; };
         void mergePointNormal(const DeviceArray<Point>& cloud, const DeviceArray<float8>& normals, const DeviceArray<float12>& output);
+
+        //marching cubes functions
+        void bindTextures(const int *edgeBuf, const int *triBuf, const int *numVertsBuf);
+        void unbindTextures();
+        int getOccupiedVoxels(const TsdfVolume& volume, DeviceArray2D<int>& occupied_voxels);
+        int computeOffsetsAndTotalVertices(DeviceArray2D<int>& occupied_voxels);
+        void generateTriangles(const TsdfVolume& volume, const Aff3f& aff, const DeviceArray2D<int>& occupied_voxels, DeviceArray<Point>& output);
     }
 }

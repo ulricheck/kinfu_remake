@@ -16,9 +16,11 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
 
     p.cols = 640;  //pixels
     p.rows = 480;  //pixels
+    p.integrate_color = false;
     p.intr = Intr(525.f, 525.f, p.cols/2 - 0.5f, p.rows/2 - 0.5f);
 
-    p.volume_dims = Vec3i::all(512);  //number of voxels
+    p.tsdf_volume_dims = Vec3i::all(512);  //number of voxels
+    p.color_volume_dims = Vec3i::all(256);  //number of voxels
     p.volume_size = Vec3f::all(3.f);  //meters
     p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
 
@@ -27,13 +29,15 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
     p.bilateral_kernel_size = 7;     //pixels
 
     p.icp_truncate_depth_dist = 0.f;        //meters, disabled
-    p.icp_dist_thres = 0.1f;                //meters
-    p.icp_angle_thres = deg2rad(30.f); //radians
+    p.icp_dist_thres = 0.25f;                //meters
+    p.icp_angle_thres = deg2rad(20.f); //radians
     p.icp_iter_num.assign(iters, iters + levels);
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
     p.tsdf_trunc_dist = 0.04f; //meters;
     p.tsdf_max_weight = 64;   //frames
+
+    p.color_max_weight = 64;   //frames
 
     p.raycast_step_factor = 0.75f;  //in voxel sizes
     p.gradient_delta_factor = 0.5f; //in voxel sizes
@@ -46,16 +50,26 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
 
 kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
-    CV_Assert(params.volume_dims[0] % 32 == 0);
+    CV_Assert(params.tsdf_volume_dims[0] % 32 == 0);
+    CV_Assert(params.color_volume_dims[0] % 32 == 0);
 
-    volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
+    tsdf_volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.tsdf_volume_dims));
 
-    volume_->setTruncDist(params_.tsdf_trunc_dist);
-    volume_->setMaxWeight(params_.tsdf_max_weight);
-    volume_->setSize(params_.volume_size);
-    volume_->setPose(params_.volume_pose);
-    volume_->setRaycastStepFactor(params_.raycast_step_factor);
-    volume_->setGradientDeltaFactor(params_.gradient_delta_factor);
+    tsdf_volume_->setTruncDist(params_.tsdf_trunc_dist);
+    tsdf_volume_->setMaxWeight(params_.tsdf_max_weight);
+    tsdf_volume_->setSize(params_.volume_size);
+    tsdf_volume_->setPose(params_.volume_pose);
+    tsdf_volume_->setRaycastStepFactor(params_.raycast_step_factor);
+    tsdf_volume_->setGradientDeltaFactor(params_.gradient_delta_factor);
+
+    if (params.integrate_color) {
+        color_volume_ = cv::Ptr<cuda::ColorVolume>(new cuda::ColorVolume(params_.color_volume_dims));
+
+        color_volume_->setTruncDist(params_.tsdf_trunc_dist);
+        color_volume_->setMaxWeight(params_.color_max_weight);
+        color_volume_->setSize(params_.volume_size);
+        color_volume_->setPose(params_.volume_pose);
+    }
 
     icp_ = cv::Ptr<cuda::ProjectiveICP>(new cuda::ProjectiveICP());
     icp_->setDistThreshold(params_.icp_dist_thres);
@@ -73,13 +87,27 @@ kfusion::KinFuParams& kfusion::KinFu::params()
 { return params_; }
 
 const kfusion::cuda::TsdfVolume& kfusion::KinFu::tsdf() const
-{ return *volume_; }
+{ return *tsdf_volume_; }
 
 kfusion::cuda::TsdfVolume& kfusion::KinFu::tsdf()
-{ return *volume_; }
+{ return *tsdf_volume_; }
 
 const kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp() const
 { return *icp_; }
+
+const cv::Ptr<cuda::ColorVolume> kfusion::KinFu::color_volume () const
+{
+    if (params_.integrate_color)
+        return color_volume_;
+    return cv::Ptr<cuda::ColorVolume>();
+}
+
+cv::Ptr<cuda::ColorVolume> kfusion::KinFu::color_volume ()
+{
+    if (params_.integrate_color)
+        return color_volume_;
+    return cv::Ptr<cuda::ColorVolume>();
+}
 
 kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp()
 { return *icp_; }
@@ -130,7 +158,9 @@ void kfusion::KinFu::reset()
     poses_.clear();
     poses_.reserve(30000);
     poses_.push_back(Affine3f::Identity());
-    volume_->clear();
+    tsdf_volume_->clear();
+    if (params_.integrate_color)
+        color_volume_->clear();
 }
 
 kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
@@ -140,7 +170,7 @@ kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
     return poses_[time];
 }
 
-bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
+bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& image)
 {
     const KinFuParams& p = params_;
     const int LEVELS = icp_->getUsedLevelsNum();
@@ -166,7 +196,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     //can't perform more on first frame
     if (frame_counter_ == 0)
     {
-        volume_->integrate(dists_, poses_.back(), p.intr);
+        tsdf_volume_->integrate(dists_, poses_.back(), p.intr);
 #if defined USE_DEPTH
         curr_.depth_pyr.swap(prev_.depth_pyr);
 #else
@@ -202,7 +232,10 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
     if (integrate)
     {
         //ScopeTime time("tsdf");
-        volume_->integrate(dists_, poses_.back(), p.intr);
+        tsdf_volume_->integrate(dists_, poses_.back(), p.intr);
+        if (p.integrate_color) {
+            color_volume_->integrate(image, dists_, poses_.back(), p.intr);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -214,7 +247,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         for (int i = 1; i < LEVELS; ++i)
             resizeDepthNormals(prev_.depth_pyr[i-1], prev_.normals_pyr[i-1], prev_.depth_pyr[i], prev_.normals_pyr[i]);
 #else
-        volume_->raycast(poses_.back(), p.intr, prev_.points_pyr[0], prev_.normals_pyr[0]);
+        tsdf_volume_->raycast(poses_.back(), p.intr, prev_.points_pyr[0], prev_.normals_pyr[0]);
         for (int i = 1; i < LEVELS; ++i)
             resizePointsNormals(prev_.points_pyr[i-1], prev_.normals_pyr[i-1], prev_.points_pyr[i], prev_.normals_pyr[i]);
 #endif
@@ -265,7 +298,7 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     #define PASS1 points_
 #endif
 
-    volume_->raycast(pose, p.intr, PASS1, normals_);
+    tsdf_volume_->raycast(pose, p.intr, PASS1, normals_);
 
     if (flag < 1 || flag > 3)
         cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, image);
