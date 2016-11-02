@@ -226,7 +226,7 @@ void writeMeshToPLYFile(const cv::viz::Mesh& mesh,const string& outFilename)
                 viz.setViewerPose(kinfu.getCameraPose());
 
             int key = cv::waitKey(pause_ ? 0 : 3);
-
+            
             switch(key)
             {
             case 't': case 'T' : take_cloud(kinfu); break;
@@ -272,14 +272,7 @@ int main (int argc, char* argv[])
 
     OpenNISource capture;
     capture.open (0);
-    //capture.open("d:/onis/20111013-224932.oni");
-    //capture.open("d:/onis/reg20111229-180846.oni");
-    //capture.open("d:/onis/white1.oni");
-    //capture.open("/media/Main/onis/20111013-224932.oni");
-    //capture.open("20111013-225218.oni");
-    //capture.open("d:/onis/20111013-224551.oni");
-    //capture.open("d:/onis/20111013-224719.oni");
-
+   
     KinFuParams custom_params = KinFuParams::default_params();
     custom_params.integrate_color = true;
 
