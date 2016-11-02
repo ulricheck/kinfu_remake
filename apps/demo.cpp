@@ -5,8 +5,11 @@
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/marching_cubes.hpp>
 #include <io/capture.hpp>
+#include <fstream>
+#include <iostream>
 
 using namespace kfusion;
+using namespace std;
 
 struct KinFuApp
 {
@@ -90,6 +93,69 @@ struct KinFuApp
         }
     }
 
+void writeMeshToPLYFile(const cv::viz::Mesh& mesh,const string& outFilename)
+{
+    ofstream outFile( outFilename.c_str() );
+
+    if ( !outFile )
+    {
+        cerr << "Error opening output file: " << outFilename << "!" << endl;
+        exit( 1 );
+    }
+
+    ////
+    // Header
+    ////
+    const int pointNum    =  mesh.cloud.cols;
+    const int triangleNum =  mesh.polygons.cols/4; //polygons is a Mat where each column has only 1 value
+    cout<<pointNum<<" "<<triangleNum<<endl;
+    
+    outFile << "ply" << endl;
+    outFile << "format ascii 1.0" << endl;
+    outFile << "element vertex " << pointNum << endl;
+    outFile << "property float x" << endl;
+    outFile << "property float y" << endl;
+    outFile << "property float z" << endl;
+    outFile << "property uchar red" << endl;
+    outFile << "property uchar green" << endl;
+    outFile << "property uchar blue" << endl;
+    outFile << "element face " << triangleNum << endl;
+    outFile << "property list uchar int vertex_index" << endl;
+    outFile << "end_header" << endl;
+
+    ////
+    // Points and colors
+    ////
+    vector<cv::Mat> channels_cloud(4);
+    vector<cv::Mat> channels_colors(4);
+    split(mesh.cloud,channels_cloud);
+    split(mesh.colors,channels_colors);
+    for ( int i = 0; i < pointNum; i++ )
+    {
+        outFile << 3-channels_cloud[0].at<float>(0,i)<<" ";       //x
+        outFile << 3-channels_cloud[1].at<float>(0,i)<<" ";       //y
+        outFile << 3-channels_cloud[2].at<float>(0,i)<<" ";       //z
+        outFile << (int)channels_colors[2].at<uchar>(0,i)<<" "; //b
+        outFile << (int)channels_colors[1].at<uchar>(0,i)<<" "; //g
+        outFile << (int)channels_colors[0].at<uchar>(0,i)<<" "; //r
+
+        outFile << endl;
+    }
+
+    ////
+    // Triangles
+    ////
+    for ( int i = 0; i < triangleNum*4; i+=4 )
+    {
+        outFile << mesh.polygons.at<int>(0,i+0)<<" ";             
+        outFile << mesh.polygons.at<int>(0,i+1)<<" ";             
+        outFile << mesh.polygons.at<int>(0,i+2)<<" ";             
+        outFile << mesh.polygons.at<int>(0,i+3)<<" ";             
+
+        outFile << endl;
+    }
+}
+
     void take_mesh(KinFu& kinfu)
     {
         if (!marching_cubes_)
@@ -119,6 +185,8 @@ struct KinFuApp
         }
 
         triangles.download(mesh.cloud.ptr<Point>());
+
+        writeMeshToPLYFile(mesh,"my_mesh.ply");
 
         viz.showWidget("cloud", cv::viz::WMesh(mesh));
     }

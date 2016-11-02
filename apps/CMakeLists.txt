@@ -3,6 +3,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../kfusion/include/)
 # Not recommended by CMake to use GLOB
 # file(GLOB srcs *.cpp *.hpp)
 
+find_package(PCL 1.2 REQUIRED)
+
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
 # APP 01: OpenNI capture
 if (OPENNI_FOUND)
     add_executable(demo demo.cpp)
@@ -19,7 +25,7 @@ endif(OPENNI_FOUND)
 
 # APP 02: BinGrabber capture
 add_executable(demo_bin demo_bin.cpp)
-target_link_libraries(demo_bin ${OpenCV_LIBS} kfusion)
+target_link_libraries(demo_bin ${OpenCV_LIBS} ${PCL_LIBRARIES} kfusion)
 
 set_target_properties(demo_bin PROPERTIES
         DEBUG_POSTFIX "d"
