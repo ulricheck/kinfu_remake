@@ -185,9 +185,9 @@ struct KinFuApp
         split(mesh.colors,channels_colors);
         for ( int i = 0; i < pointNum; i++ )
         {
-            outFile << 3-channels_cloud[0].at<float>(0,i)<<" ";       //x
-            outFile << 3-channels_cloud[1].at<float>(0,i)<<" ";       //y
-            outFile << 3-channels_cloud[2].at<float>(0,i)<<" ";       //z
+            outFile << channels_cloud[0].at<float>(0,i)<<" ";       //x
+            outFile << channels_cloud[1].at<float>(0,i)<<" ";       //y
+            outFile << channels_cloud[2].at<float>(0,i)<<" ";       //z
             outFile << (int)channels_colors[2].at<uchar>(0,i)<<" "; //b
             outFile << (int)channels_colors[1].at<uchar>(0,i)<<" "; //g
             outFile << (int)channels_colors[0].at<uchar>(0,i)<<" "; //r
