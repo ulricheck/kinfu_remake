@@ -25,12 +25,14 @@ typedef unsigned long long int TimestampT;
 
 class UTConnector {
 public:
-    UTConnector(const std::string& _components_path)
-    : m_utFacade( _components_path.c_str() )
+    UTConnector(const char* _components_path)
+    : m_utFacade( _components_path )
     , m_haveNewFrame( false )
     , m_lastTimestamp( 0 )
     , m_dataflowLoaded( false )
     , m_dataflowRunning( false )
+    , m_pushsink_camera_depth( NULL )
+    , m_pullsink_camera_rgb( NULL )
     {
     }
 
@@ -65,9 +67,9 @@ public:
      * livecycle management for the utconnector
      * not thread-safe
      */
-    virtual bool initialize(const std::string& _utql_filename) {
+    virtual bool initialize(const char* _utql_filename) {
         try {
-            m_utFacade.loadDataflow( _utql_filename.c_str() );
+            m_utFacade.loadDataflow( _utql_filename );
             m_dataflowLoaded = true;
 
             if (m_pushsink_camera_depth != NULL) {
@@ -191,6 +193,7 @@ public:
     }
 
     void receive_depth_image(std::shared_ptr<Facade::BasicImageMeasurement>& img) {
+        std::cout << "got image" << std::endl;
         {
             std::unique_lock<std::mutex> ul( m_textureAccessMutex );
             m_depth_image = img;
@@ -557,11 +560,8 @@ int main (int argc, char* argv[])
 
     Facade::initUbitrackLogging("log4cpp.conf");
 
-    std::string components_path(argv[1]);
-    std::string dfg_filename(argv[2]);
-
-    UTConnector connector(components_path);
-    connector.initialize (dfg_filename);
+    UTConnector connector(argv[1]);
+    connector.initialize (argv[2]);
    
     KinFuParams custom_params = KinFuParams::default_params();
     custom_params.integrate_color = true;
