@@ -9,6 +9,17 @@ endif()
 # ---[ Solution name
 project(kfusion C CXX)
 
+# enable C++11 compilation on Unix Like platforms
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif ()
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+endif ()
+
 # ---[ utility
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 include(cmake/Utils.cmake)
@@ -40,7 +51,8 @@ endif()
 find_package(OpenCV 3.1.0 REQUIRED COMPONENTS core viz highgui)
 find_package(CUDA 5.0 REQUIRED)
 find_package(OpenNI)
-include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIR})
+find_package(Ubitrack)
+include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS} ${OPENNI_INCLUDE_DIRS} ${UBITRACK_INCLUDE_DIR})
 
 # ---[ misc settings
 if(USE_PROJECT_FOLDERS)

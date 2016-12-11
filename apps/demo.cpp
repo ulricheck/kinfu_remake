@@ -4,7 +4,7 @@
 #include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/marching_cubes.hpp>
-#include <io/capture.hpp>
+#include <kfusion_io/capture.hpp>
 #include <fstream>
 #include <iostream>
 

@@ -11,7 +11,7 @@
 #include <kfusion/kinfu.hpp>
 #include <fstream>
 
-#include "io/bin_grabber.hpp"
+#include "kfusion_io/bin_grabber.hpp"
 
 namespace kfusion {
 

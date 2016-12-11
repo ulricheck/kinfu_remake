@@ -6,7 +6,7 @@
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/marching_cubes.hpp>
 //#include <io/capture.hpp>
-#include <io/bin_grabber.hpp>
+#include <kfusion_io/bin_grabber.hpp>
 
 using namespace kfusion;
 

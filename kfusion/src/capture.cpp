@@ -1,7 +1,7 @@
 #pragma warning (disable :4996)
 #undef _CRT_SECURE_NO_DEPRECATE
 #include "XnCppWrapper.h"
-#include <io/capture.hpp>
+#include <kfusion_io/capture.hpp>
 
 using namespace std;
 using namespace xn;

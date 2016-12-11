@@ -3,7 +3,7 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=
 #add_module_library(kfusion)
 set(module_name kfusion)
 set(Includes_srcs
-    include/io/bin_grabber.hpp
+    include/kfusion_io/bin_grabber.hpp
     include/${module_name}/exports.hpp
     include/${module_name}/kinfu.hpp
     include/${module_name}/types.hpp)
@@ -47,7 +47,7 @@ if(OPENNI_FOUND)
     set(Source_srcs ${Source_srcs}
         src/capture.cpp)
     set(Include_srcs ${Include_srcs}
-        include/io/capture.hpp)
+        include/kfusion_io/capture.hpp)
 endif(OPENNI_FOUND)
 
 include_directories(include include/kfusion/cuda/ src src/cuda)
